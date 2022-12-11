@@ -1,4 +1,4 @@
-#include "../include/Shader.h"
+#include "../include/Shader.hpp"
 
 
 // version: 221030
@@ -151,3 +151,30 @@ void ShaderProgram::useProgram() {
 
 GLuint ShaderProgram::programId() const { return this->m_programId; }
 ShaderProgramStatus ShaderProgram::status() const { return this->m_shaderProgramStatus; }
+
+// utility uniform functions
+// ------------------------------------------------------------------------
+void ShaderProgram::setInt(const GLchar* name, int value)
+{ 
+    glUniform1i(glGetUniformLocation(this->m_programId, name), value); 
+}
+
+void ShaderProgram::setBool(const GLchar* name, bool value)
+{ 
+    glUniform1i(glGetUniformLocation(this->m_programId, name), value); 
+}
+
+void ShaderProgram::setFloat(const GLchar* name, float value)
+{ 
+    glUniform1f(glGetUniformLocation(this->m_programId, name), value); 
+}
+
+void ShaderProgram::setVec2(const GLchar* name, float x, float y)
+{ 
+    glUniform2f(glGetUniformLocation(this->m_programId, name), x, y); 
+}
+
+void ShaderProgram::setMat4(const GLchar* name, const mat4 &mat)
+{
+    glUniformMatrix4fv(glGetUniformLocation(this->m_programId, name), 1, GL_FALSE, &mat[0][0]);
+}

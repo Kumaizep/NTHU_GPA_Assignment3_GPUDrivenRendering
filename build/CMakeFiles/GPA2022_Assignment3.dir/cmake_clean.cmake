@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/GPA2022_Assignment3.dir/include/glad/glad.c.o"
+  "CMakeFiles/GPA2022_Assignment3.dir/include/glad/glad.c.o.d"
   "CMakeFiles/GPA2022_Assignment3.dir/include/imgui/imgui.cpp.o"
   "CMakeFiles/GPA2022_Assignment3.dir/include/imgui/imgui.cpp.o.d"
   "CMakeFiles/GPA2022_Assignment3.dir/include/imgui/imgui_demo.cpp.o"
@@ -25,8 +27,6 @@ file(REMOVE_RECURSE
   "CMakeFiles/GPA2022_Assignment3.dir/src/Shader.cpp.o.d"
   "CMakeFiles/GPA2022_Assignment3.dir/src/ViewFrustumSceneObject.cpp.o"
   "CMakeFiles/GPA2022_Assignment3.dir/src/ViewFrustumSceneObject.cpp.o.d"
-  "CMakeFiles/GPA2022_Assignment3.dir/src/glad.c.o"
-  "CMakeFiles/GPA2022_Assignment3.dir/src/glad.c.o.d"
   "CMakeFiles/GPA2022_Assignment3.dir/src/main.cpp.o"
   "CMakeFiles/GPA2022_Assignment3.dir/src/main.cpp.o.d"
   "GPA2022_Assignment3"

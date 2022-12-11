@@ -1,11 +1,15 @@
-#pragma once
+#ifndef SHADER_HPP
+#define SHADER_HPP
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sstream>
 
-#include <glad/glad.h>
+#include "glad/glad.h"
+#include "glm/glm.hpp"
 
+using namespace glm;
+using namespace std;
 // version: 221030
 
 enum class ShaderStatus {
@@ -64,6 +68,12 @@ public:
 public:
 	GLuint programId() const;
 	ShaderProgramStatus status() const;
+	void setInt(const GLchar* name, int value);
+	void setBool(const GLchar* name, bool value);
+	void setFloat(const GLchar* name, float value);
+	void setVec2(const GLchar* name, float x, float y);
+	void setMat4(const GLchar* name, const mat4 &mat);
+
 
 private:
 	GLuint m_programId;
@@ -75,3 +85,4 @@ private:
 
 };
 
+#endif

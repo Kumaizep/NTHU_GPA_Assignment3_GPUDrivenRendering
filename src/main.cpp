@@ -1,13 +1,39 @@
-#include "../include/Shader.h"
-#include "../include/SceneRenderer.h"
+#include "../include/Shader.hpp"
+#include "../include/SceneRenderer.hpp"
+#include "../include/MyImGuiPanel.hpp"
+#include "../include/MyPoissonSample.hpp"
+#include "../include/ViewFrustumSceneObject.hpp"
+#include "../include/InfinityPlane.hpp"
+#include "../include/camera.hpp"
+#include "../include/model.hpp"
+#include "../include/texture.hpp"
 #include <GLFW/glfw3.h>
-#include "../include/MyImGuiPanel.h"
-
-#include "../include/ViewFrustumSceneObject.h"
-#include "../include/InfinityPlane.h"
 
 #pragma comment (lib, "lib-vc2015\\glfw3.lib")
 #pragma comment(lib, "assimp-vc141-mt.lib")
+
+struct DrawElementsIndirectCommand{
+	unsigned int count;
+	unsigned int instanceCount;
+	unsigned int firstIndex;
+	unsigned int baseVertex;
+	unsigned int baseInstance;
+};
+
+struct InstanceProperties {
+	glm::vec4 position;
+};
+
+GLuint vaoHandle;
+GLuint resetCSProgramHandle;
+GLuint cullingCSProgramHandle;
+GLuint renderProgramHandle;
+
+ShaderProgram* rcsShaderProgram;
+ShaderProgram* ccsShaderProgram;
+
+int NUM_TOTAL_INSTANCE = 10;
+
 
 int FRAME_WIDTH = 1024;
 int FRAME_HEIGHT = 512;
@@ -19,22 +45,38 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 bool initializeGL();
 void resizeGL(GLFWwindow *window, int w, int h);
-void paintGL();
+void paintGL(Camera& pCamera, Camera& gCamera);
 void resize(const int w, const int h);
 
 bool m_leftButtonPressed = false;
 bool m_rightButtonPressed = false;
 double cursorPos[2];
 
+GLubyte timerCounter = 0;
+bool timerEnabled = true;
+float timerCurrent = 0.0f;
+float timerLast = 0.0f;
+unsigned int timerSpeed = 16;
 
+bool keyPressing[400] = {0};
+float keyPressTime[400] = {0.0f};
+
+bool trackballEnable = false;
+vec2 mouseCurrent = vec2(0.0f, 0.0f);
+vec2 mouseLast = vec2(0.0f, 0.0f);
+
+using namespace std;
 
 MyImGuiPanel* m_imguiPanel = nullptr;
 
-void vsyncDisabled(GLFWwindow *window);
+void vsyncDisabled(GLFWwindow *window, Camera& pCamera, Camera& gCamera);
 
 // ==============================================
 SceneRenderer *defaultRenderer = nullptr;
 ShaderProgram* defaultShaderProgram = new ShaderProgram();
+
+vector<Model> models;
+Texture texture;
 
 glm::mat4 godProjMat;
 glm::mat4 godViewMat;
@@ -46,7 +88,48 @@ InfinityPlane *infinityPlane = nullptr;
 // ==============================================
 
 void updateWhenPlayerProjectionChanged(const float nearDepth, const float farDepth);
-void viewFrustumMultiClipCorner(const std::vector<float> &depths, const glm::mat4 &viewMat, const glm::mat4 &projMat, float *clipCorner);
+void viewFrustumMultiClipCorner(const vector<float> &depths, const glm::mat4 &viewMat, const glm::mat4 &projMat, float *clipCorner);
+
+void timerUpdate()
+{
+    timerLast = timerCurrent;
+    timerCurrent = glfwGetTime();
+}
+
+void processCameraMove(Camera& camera)
+{
+    float timeDifferent = 0.0f;
+    if (timerEnabled)
+        timeDifferent = timerCurrent - timerLast;
+
+    if (keyPressing[GLFW_KEY_W])
+        camera.processMove(FORWARD, timeDifferent);
+    if (keyPressing[GLFW_KEY_S])
+        camera.processMove(BACKWARD, timeDifferent);
+    if (keyPressing[GLFW_KEY_A])
+        camera.processMove(LEFT, timeDifferent);
+    if (keyPressing[GLFW_KEY_D])
+        camera.processMove(RIGHT, timeDifferent);
+    if (keyPressing[GLFW_KEY_Z])
+        camera.processMove(UP, timeDifferent);
+    if (keyPressing[GLFW_KEY_X])
+        camera.processMove(DOWN, timeDifferent);
+}
+
+void processCameraTrackball(Camera& camera, GLFWwindow *window)
+{   
+    double x, y;
+    glfwGetCursorPos(window, &x, &y); 
+    mouseLast = mouseCurrent;
+    mouseCurrent = vec2(x, y);
+
+    vec2 mouseDifferent = vec2(0.0f, 0.0f);
+    if (trackballEnable)
+    {
+        mouseDifferent = mouseCurrent - mouseLast;
+    	camera.processTrackball(mouseDifferent.x, mouseDifferent.y);
+    }
+}
 
 int main(){
 	glfwInit();
@@ -56,7 +139,7 @@ int main(){
 
 	GLFWwindow *window = glfwCreateWindow(FRAME_WIDTH, FRAME_HEIGHT, "rendering", nullptr, nullptr);
 	if (window == nullptr){
-		std::cout << "failed to create GLFW window\n";
+		cout << "failed to create GLFW window\n";
 		glfwTerminate();
 		return -1;
 	}
@@ -65,7 +148,7 @@ int main(){
 	// load OpenGL function pointer
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
+		cout << "Failed to initialize GLAD" << endl;
 		return -1;
 	}
 
@@ -75,8 +158,21 @@ int main(){
 	glfwSetCursorPosCallback(window, cursorPosCallback);
 	glfwSetFramebufferSizeCallback(window, resizeGL);
 
+	Camera godCamera = Camera()
+                        .withPosition(vec3(0.0, 50.0, 20.0))
+                        .withMoveSpeed(40.0f)
+                        .withTrackballSpeed(0.15f)
+                        .withTheta(270.0f)
+                        .withPhi(-45.0f);
+    Camera playerCamera = Camera()
+                        .withPosition(vec3(0.0, 8.0, 10.0))
+                        .withMoveSpeed(40.0f)
+                        .withTrackballSpeed(0.15f)
+                        .withTheta(270.0f)
+                        .withPhi(-16.6666f);
+
 	if (initializeGL() == false) {
-		std::cout << "initialize GL failed\n";
+		cout << "initialize GL failed\n";
 		glfwTerminate();
 		system("pause");
 		return 0;
@@ -94,7 +190,7 @@ int main(){
 	glfwSwapInterval(0);
 
 	// start game-loop
-	vsyncDisabled(window);
+	vsyncDisabled(window, playerCamera, godCamera);
 		
 
 	ImGui_ImplOpenGL3_Shutdown();
@@ -105,7 +201,8 @@ int main(){
 	return 0;
 }
 
-void vsyncDisabled(GLFWwindow *window) {
+void vsyncDisabled(GLFWwindow *window, Camera& pCamera, Camera& gCamera) 
+{
 	double previousTimeForFPS = glfwGetTime();
 	int frameCount = 0;
 
@@ -125,25 +222,26 @@ void vsyncDisabled(GLFWwindow *window) {
 			previousTimeForFPS = currentTime;
 		}			
 
+		timerUpdate();
 		glfwPollEvents();
-		paintGL();
+		processCameraMove(pCamera);
+        processCameraTrackball(gCamera, window);
+		paintGL(pCamera, gCamera);
 		glfwSwapBuffers(window);
 	}
 }
 
-
-
-bool initializeGL(){
-	// initialize shader program
+bool initializeShaderDefault()
+{
 	// vertex shader
 	Shader* vsShader = new Shader(GL_VERTEX_SHADER);
 	vsShader->createShaderFromFile("asset/shader/oglVertexShader.glsl");
-	std::cout << vsShader->shaderInfoLog() << "\n";
+	cout << vsShader->shaderInfoLog() << "\n";
 
 	// fragment shader
 	Shader* fsShader = new Shader(GL_FRAGMENT_SHADER);
 	fsShader->createShaderFromFile("asset/shader/oglFragmentShader.glsl");
-	std::cout << fsShader->shaderInfoLog() << "\n";
+	cout << fsShader->shaderInfoLog() << "\n";
 
 	// shader program
 	ShaderProgram* shaderProgram = new ShaderProgram();
@@ -152,6 +250,7 @@ bool initializeGL(){
 	shaderProgram->attachShader(fsShader);
 	shaderProgram->checkStatus();
 	if (shaderProgram->status() != ShaderProgramStatus::READY) {
+		cout << "DEBUG::MAIN::ShaderProgramStatusNotReady" << endl;
 		return false;
 	}
 	shaderProgram->linkProgram();
@@ -176,6 +275,62 @@ bool initializeGL(){
 	const glm::vec4 directionalLightDir = glm::vec4(0.4, 0.5, 0.8, 0.0);
 	
 	defaultRenderer->setDirectionalLightDir(directionalLightDir);
+	return true;
+}
+
+bool initializeResetShader()
+{
+	// vertex shader
+	Shader* rcsShader = new Shader(GL_COMPUTE_SHADER);
+	rcsShader->createShaderFromFile("asset/shader/oglResetComputeShader.glsl");
+	cout << rcsShader->shaderInfoLog() << "\n";
+
+	// shader program
+	rcsShaderProgram = new ShaderProgram();
+	rcsShaderProgram->init();
+	rcsShaderProgram->attachShader(rcsShader);
+	rcsShaderProgram->checkStatus();
+	if (rcsShaderProgram->status() != ShaderProgramStatus::READY) {
+		cout << "DEBUG::MAIN::ShaderProgramStatusNotReady" << endl;
+		return false;
+	}
+	rcsShaderProgram->linkProgram();
+
+	rcsShader->releaseShader();
+	delete rcsShader;
+	return true;
+}
+
+bool initializeCullingShader()
+{
+	// vertex shader
+	Shader* ccsShader = new Shader(GL_COMPUTE_SHADER);
+	ccsShader->createShaderFromFile("asset/shader/oglCullingComputeShader.glsl");
+	cout << ccsShader->shaderInfoLog() << "\n";
+	// shader program
+	ccsShaderProgram = new ShaderProgram();
+	ccsShaderProgram->init();
+	ccsShaderProgram->attachShader(ccsShader);
+	ccsShaderProgram->checkStatus();
+	if (rcsShaderProgram->status() != ShaderProgramStatus::READY) {
+		cout << "DEBUG::MAIN::ShaderProgramStatusNotReady" << endl;
+		return false;
+	}
+	ccsShaderProgram->linkProgram();
+
+	ccsShader->releaseShader();
+	delete ccsShader;
+	return true;
+}
+
+bool initializeGL(){
+	// initialize shader program
+	if (!initializeShaderDefault())
+		return false;
+	if (!initializeResetShader())
+		return false;
+	if (!initializeCullingShader())
+		return false;
 	// =================================================================
 	// initialize camera and view frustum
 	infinityPlane = new InfinityPlane(2);
@@ -187,43 +342,148 @@ bool initializeGL(){
 	resize(FRAME_WIDTH, FRAME_HEIGHT);
 	// =================================================================	
 	m_imguiPanel = new MyImGuiPanel();	
+
+	// =================================================================
+	// initialize models
+	models.push_back(Model("asset/grassB.obj", 0));
+	models.push_back(Model("asset/bush01_lod2.obj", 1));
+	models.push_back(Model("asset/bush05_lod2.obj", 2));
+
+	// =================================================================
+	// initialize textures
+	texture = Texture("asset/grassB_albedo.png", "asset/bush01.png", "asset/bush05.png", 1024, 1024 , 4);
+	// texture = Texture("asset/grassB_albedo.png", 1024, 1024 , 4);
+
+	// =================================================================
+	// initialize the poisson samples
+	MyPoissonSample* sample0 = MyPoissonSample::fromFile("asset/poissonPoints_155304.ppd");
+	MyPoissonSample* sample1 = MyPoissonSample::fromFile("asset/poissonPoints_1010.ppd");
+	MyPoissonSample* sample2 = MyPoissonSample::fromFile("asset/poissonPoints_2797.ppd");
+	// get number of sample
+	const int NUM_SAMPLE = sample2->m_numSample;
+	const float* POSITION_BUFFER = sample2->m_positions;
+	NUM_TOTAL_INSTANCE = NUM_SAMPLE;
+	const int offsetla = 0;
+	// =================================================================
+	// initialize rawInsData
+	InstanceProperties* rawInsData = new InstanceProperties[NUM_TOTAL_INSTANCE];
+	for(int i = 0; i < NUM_TOTAL_INSTANCE; i++)
+	{
+		int offseted = i + offsetla;
+		rawInsData[i].position = vec4(POSITION_BUFFER[offseted * 3], POSITION_BUFFER[offseted * 3 + 1], POSITION_BUFFER[offseted * 3 + 2], 0.0f);
+		// rawInsData[i].position = vec4(0, 0, i, 0.0);
+		// cout << i << ":\t(" << POSITION_BUFFER[offseted * 3] << ", " << POSITION_BUFFER[offseted * 3 + 1] << ", " << POSITION_BUFFER[offseted * 3] << ")" << endl;
+	}
+
+	// prepare a SSBO for storing raw instance data
+	GLuint rawInstanceDataBufferHandle;
+	glGenBuffers(1, &rawInstanceDataBufferHandle);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, rawInstanceDataBufferHandle);
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, NUM_TOTAL_INSTANCE * sizeof(InstanceProperties), 
+		rawInsData, GL_MAP_READ_BIT);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, rawInstanceDataBufferHandle);
+
+	// prepare a SSBO for storing VALID instance data
+	GLuint validInstanceDataBufferHandle;
+	glGenBuffers(1, &validInstanceDataBufferHandle);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, validInstanceDataBufferHandle);
+	// #TAG1
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, NUM_TOTAL_INSTANCE * sizeof(InstanceProperties), 
+		nullptr, GL_MAP_READ_BIT);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, validInstanceDataBufferHandle);
+
+	// prepare a SSBO for storing draw commands
+	DrawElementsIndirectCommand drawCommands[1];
+	drawCommands[0].count = models[0].getVertexNumber();
+	// #TAG1
+	drawCommands[0].instanceCount = NUM_TOTAL_INSTANCE;
+	drawCommands[0].firstIndex = 0;
+	drawCommands[0].baseVertex = 0;
+	drawCommands[0].baseInstance = 0;
+	GLuint cmdBufferHandle;
+	glGenBuffers(1, &cmdBufferHandle);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, cmdBufferHandle);
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(DrawElementsIndirectCommand),
+	drawCommands, GL_MAP_READ_BIT);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, cmdBufferHandle);
+
+	models[2].bind0();
+	// SSBO as vertex shader attribute
+	glBindBuffer(GL_ARRAY_BUFFER, validInstanceDataBufferHandle);
+	glVertexAttribPointer(3, 4, GL_FLOAT, false, 0, nullptr);
+	glEnableVertexAttribArray(3);
+	glVertexAttribDivisor(3, 1);
+	// SSBO as draw-indirect-buffer
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, cmdBufferHandle);
+	// done
+	glBindVertexArray(0) ; 
+    timerLast = glfwGetTime();
 	
 	return true;
 }
+
 void resizeGL(GLFWwindow *window, int w, int h){
 	resize(w, h);
 }
 
-void paintGL(){
+void paintGL(Camera& pCamera, Camera& gCamera){
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
+
+	// shader program for resetting render parameters
+	rcsShaderProgram->useProgram();
+	glDispatchCompute(1, 1, 1);
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+	// shader program for collecting visible instances
+	ccsShaderProgram->useProgram();
+	// send the necessary information to compute shader (must after useProgram)
+	ccsShaderProgram->setInt("numMaxInstance", NUM_TOTAL_INSTANCE);
+	ccsShaderProgram->setMat4("viewProjMat", playerProjMat * pCamera.getView());
+	// start GPU process
+	glDispatchCompute((NUM_TOTAL_INSTANCE / 1024) + 1, 1, 1);
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+	// shader program for rendering
+	// glUseProgram(renderProgramHandle);
+	// render
+	// glBindVertexArray(models[0].meshes[0].VAO) ;
+	// glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0);
+
 	// ===============================
 	// update infinity plane with player camera
-	const glm::vec3 PLAYER_VIEW_POSITION = glm::vec3(0.0, 8.0, 10.0);
-	infinityPlane->updateState(playerViewMat, PLAYER_VIEW_POSITION);
+	const glm::vec3 PLAYER_VIEW_POSITION = pCamera.position;
+	infinityPlane->updateState(pCamera.getView(), PLAYER_VIEW_POSITION);
 
 	// update player camera view frustum
-	viewFrustumSO->updateState(playerViewMat, PLAYER_VIEW_POSITION);
+	viewFrustumSO->updateState(pCamera.getView(), PLAYER_VIEW_POSITION);
+
+	// models[0].updateState(pCamera.getView(), PLAYER_VIEW_POSITION);
 
 	// =============================================
 	// start new frame
 	defaultRenderer->setViewport(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
 	defaultRenderer->startNewFrame();
 
+
 	// rendering with god view
 	const int HALF_W = FRAME_WIDTH * 0.5;
 	defaultRenderer->setViewport(0, 0, HALF_W, FRAME_HEIGHT);
 	defaultRenderer->setProjection(godProjMat);
-	defaultRenderer->setView(godViewMat);
+	defaultRenderer->setView(gCamera.getView());
 	defaultRenderer->renderPass();
+	defaultRenderer->m_shaderProgram->setInt("pixelProcessId", 0);
+	models[2].draw(*(defaultRenderer->m_shaderProgram), texture);
 
 	// rendering with player view
 	defaultRenderer->setViewport(HALF_W, 0, HALF_W, FRAME_HEIGHT);
 	defaultRenderer->setProjection(playerProjMat);
-	defaultRenderer->setView(playerViewMat);
+	defaultRenderer->setView(pCamera.getView());
 	defaultRenderer->renderPass();
+	defaultRenderer->m_shaderProgram->setInt("pixelProcessId", 0);
+	models[2].draw(*(defaultRenderer->m_shaderProgram), texture);
 	// ===============================
 
 	ImGui::Begin("My name is window");
@@ -235,9 +495,52 @@ void paintGL(){
 }
 
 ////////////////////////////////////////////////
-void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods){}
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+	double x, y;
+    glfwGetCursorPos(window, &x, &y);
+    if (button == GLFW_MOUSE_BUTTON_LEFT)
+    {
+    	if (action == GLFW_PRESS) {
+            trackballEnable = true;
+            printf("Mouse %d is pressed at (%f, %f)\n", button, x, y);
+        }
+        else if (action == GLFW_RELEASE) {
+            trackballEnable = false;
+            printf("Mouse %d is released at (%f, %f)\n", button, x, y);
+        }
+    }
+}
 void cursorPosCallback(GLFWwindow* window, double x, double y){}
-void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods){}
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	switch (key) {
+        case GLFW_KEY_ESCAPE:
+            glfwSetWindowShouldClose(window, true);
+            break;
+        case GLFW_KEY_T:
+            if (action == GLFW_PRESS) timerEnabled = !timerEnabled;
+            break;
+        case GLFW_KEY_D:
+        case GLFW_KEY_A:
+        case GLFW_KEY_W:
+        case GLFW_KEY_S:
+        case GLFW_KEY_Z:
+        case GLFW_KEY_X:
+            if (action == GLFW_PRESS)
+            {
+                keyPressing[key] = true;
+            }
+            else if (action == GLFW_RELEASE)
+            {
+                keyPressing[key] = false;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset) {}
 
 void updateWhenPlayerProjectionChanged(const float nearDepth, const float farDepth) {
@@ -247,7 +550,7 @@ void updateWhenPlayerProjectionChanged(const float nearDepth, const float farDep
 
 	float dOffset = (farDepth - nearDepth) / NUM_CASCADE;
 	float *corners = new float[(NUM_CASCADE + 1) * 12];
-	std::vector<float> depths(NUM_CASCADE + 1);
+	vector<float> depths(NUM_CASCADE + 1);
 	for (int i = 0; i < NUM_CASCADE; i++) {
 		depths[i] = nearDepth + dOffset * i;
 	}
@@ -303,7 +606,7 @@ void resize(const int w, const int h) {
 
 	updateWhenPlayerProjectionChanged(0.1, PLAYER_PROJ_FAR);
 }
-void viewFrustumMultiClipCorner(const std::vector<float> &depths, const glm::mat4 &viewMat, const glm::mat4 &projMat, float *clipCorner) {
+void viewFrustumMultiClipCorner(const vector<float> &depths, const glm::mat4 &viewMat, const glm::mat4 &projMat, float *clipCorner) {
 	const int NUM_CLIP = depths.size();
 
 	// Calculate Inverse
@@ -339,3 +642,5 @@ void viewFrustumMultiClipCorner(const std::vector<float> &depths, const glm::mat
 		clipOffset = clipOffset + 1;
 	}
 }
+
+

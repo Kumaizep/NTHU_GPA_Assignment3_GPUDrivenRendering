@@ -1,4 +1,4 @@
-#include "SceneRenderer.h"
+#include "../include/SceneRenderer.hpp"
 
 
 SceneRenderer::SceneRenderer()
@@ -59,6 +59,9 @@ void SceneRenderer::setViewport(const int x, const int y, const int w, const int
 }
 void SceneRenderer::appendObject(DynamicSceneObject *obj){
 	this->m_sceneObjects.push_back(obj);
+}
+void SceneRenderer::appendIndirectObject(DynamicSceneObject *obj){
+	this->m_indirectObjects.push_back(obj);
 }
 void SceneRenderer::clear(const glm::vec4 &clearColor, const float depth){
 	static const float COLOR[] = { 0.0, 0.0, 0.0, 1.0 };

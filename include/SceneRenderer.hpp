@@ -1,9 +1,9 @@
 #pragma once
 
 #include <vector>
-#include "Shader.h"
-#include "SceneManager.h"
-#include "DynamicSceneObject.h"
+#include "Shader.hpp"
+#include "SceneManager.hpp"
+#include "DynamicSceneObject.hpp"
 
 
 class SceneRenderer
@@ -11,9 +11,9 @@ class SceneRenderer
 public:
 	SceneRenderer();
 	virtual ~SceneRenderer();
+	ShaderProgram *m_shaderProgram = nullptr;
 
 private:
-	ShaderProgram *m_shaderProgram = nullptr;
 	glm::mat4 m_projMat;
 	glm::mat4 m_viewMat;
 	glm::vec4 m_directionalLightDir;
@@ -21,6 +21,7 @@ private:
 	int m_frameHeight;	
 
 	std::vector<DynamicSceneObject*> m_sceneObjects;
+	std::vector<DynamicSceneObject*> m_indirectObjects;
 
 
 public:
@@ -32,6 +33,7 @@ public:
 	void setDirectionalLightDir(const glm::vec4 &dir);
 	void setViewport(const int x, const int y, const int w, const int h);
 	void appendObject(DynamicSceneObject *obj);
+	void appendIndirectObject(DynamicSceneObject *obj);
 
 // pipeline
 public:

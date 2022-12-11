@@ -5,13 +5,13 @@
 # compile CXX with /usr/bin/c++
 C_DEFINES = 
 
-C_INCLUDES = -I"/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/include" -I"/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/include/glad" -I"/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/include/imgui" -I"/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/include/imgui/backends"
+C_INCLUDES = -I/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/include -I/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/include/glad -I/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/include/imgui -I/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/include/imgui/backends
 
 C_FLAGS = -g
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I"/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/include" -I"/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/include/glad" -I"/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/include/imgui" -I"/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/include/imgui/backends"
+CXX_INCLUDES = -I/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/include -I/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/include/glad -I/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/include/imgui -I/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/include/imgui/backends
 
 CXX_FLAGS = -lGL -lGLEW -lglfw -lglut -lassimp -O0 -g
 

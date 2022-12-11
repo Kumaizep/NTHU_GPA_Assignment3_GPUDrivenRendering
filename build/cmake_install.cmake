@@ -1,4 +1,4 @@
-# Install script for directory: /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering
+# Install script for directory: /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

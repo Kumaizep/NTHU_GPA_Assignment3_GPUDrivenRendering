@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DynamicSceneObject.h"
+#include "DynamicSceneObject.hpp"
 
 class ViewFrustumSceneObject
 {

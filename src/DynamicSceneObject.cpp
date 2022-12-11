@@ -1,4 +1,4 @@
-#include "DynamicSceneObject.h"
+#include "../include/DynamicSceneObject.hpp"
 
 
 DynamicSceneObject::DynamicSceneObject(const int maxNumVertex, const int maxNumIndex, const bool normalFlag, const bool uvFlag)

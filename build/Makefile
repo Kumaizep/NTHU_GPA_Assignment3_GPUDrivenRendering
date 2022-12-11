@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering"
+CMAKE_SOURCE_DIR = /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/build"
+CMAKE_BINARY_DIR = /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start "/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/build/CMakeFiles" "/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/build//CMakeFiles/progress.marks"
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/build/CMakeFiles /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start "/home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPU Driven Rendering/build/CMakeFiles" 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -141,6 +141,30 @@ copy_assets: cmake_check_build_system
 copy_assets/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/copy_assets.dir/build.make CMakeFiles/copy_assets.dir/build
 .PHONY : copy_assets/fast
+
+include/glad/glad.o: include/glad/glad.c.o
+.PHONY : include/glad/glad.o
+
+# target to build an object file
+include/glad/glad.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPA2022_Assignment3.dir/build.make CMakeFiles/GPA2022_Assignment3.dir/include/glad/glad.c.o
+.PHONY : include/glad/glad.c.o
+
+include/glad/glad.i: include/glad/glad.c.i
+.PHONY : include/glad/glad.i
+
+# target to preprocess a source file
+include/glad/glad.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPA2022_Assignment3.dir/build.make CMakeFiles/GPA2022_Assignment3.dir/include/glad/glad.c.i
+.PHONY : include/glad/glad.c.i
+
+include/glad/glad.s: include/glad/glad.c.s
+.PHONY : include/glad/glad.s
+
+# target to generate assembly for a file
+include/glad/glad.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPA2022_Assignment3.dir/build.make CMakeFiles/GPA2022_Assignment3.dir/include/glad/glad.c.s
+.PHONY : include/glad/glad.c.s
 
 include/imgui/imgui.o: include/imgui/imgui.cpp.o
 .PHONY : include/imgui/imgui.o
@@ -454,30 +478,6 @@ src/ViewFrustumSceneObject.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPA2022_Assignment3.dir/build.make CMakeFiles/GPA2022_Assignment3.dir/src/ViewFrustumSceneObject.cpp.s
 .PHONY : src/ViewFrustumSceneObject.cpp.s
 
-src/glad.o: src/glad.c.o
-.PHONY : src/glad.o
-
-# target to build an object file
-src/glad.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPA2022_Assignment3.dir/build.make CMakeFiles/GPA2022_Assignment3.dir/src/glad.c.o
-.PHONY : src/glad.c.o
-
-src/glad.i: src/glad.c.i
-.PHONY : src/glad.i
-
-# target to preprocess a source file
-src/glad.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPA2022_Assignment3.dir/build.make CMakeFiles/GPA2022_Assignment3.dir/src/glad.c.i
-.PHONY : src/glad.c.i
-
-src/glad.s: src/glad.c.s
-.PHONY : src/glad.s
-
-# target to generate assembly for a file
-src/glad.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/GPA2022_Assignment3.dir/build.make CMakeFiles/GPA2022_Assignment3.dir/src/glad.c.s
-.PHONY : src/glad.c.s
-
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
 
@@ -512,6 +512,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... copy_assets"
 	@echo "... GPA2022_Assignment3"
+	@echo "... include/glad/glad.o"
+	@echo "... include/glad/glad.i"
+	@echo "... include/glad/glad.s"
 	@echo "... include/imgui/imgui.o"
 	@echo "... include/imgui/imgui.i"
 	@echo "... include/imgui/imgui.s"
@@ -551,9 +554,6 @@ help:
 	@echo "... src/ViewFrustumSceneObject.o"
 	@echo "... src/ViewFrustumSceneObject.i"
 	@echo "... src/ViewFrustumSceneObject.s"
-	@echo "... src/glad.o"
-	@echo "... src/glad.i"
-	@echo "... src/glad.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
