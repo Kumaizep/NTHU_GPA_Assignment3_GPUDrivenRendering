@@ -120,7 +120,7 @@ public:
     void processMove(MoveDirection moveDirction, float timeDifferent)
     {
         float shift = moveSpeed * timeDifferent;
-        cout << "DEBUG::CAMERA::C-CAMERA-F-PM-1: " << shift << endl;
+        // cout << "DEBUG::CAMERA::C-CAMERA-F-PM-1: " << shift << endl;
         if (moveDirction == FORWARD)
             position += vec3(front.x, 0, front.z) * shift;
         if (moveDirction == BACKWARD)
@@ -139,7 +139,7 @@ public:
             position += vec3(0.0f, 1.0f, 0.0f) * shift;
         if (moveDirction == DOWN)
             position -= vec3(0.0f, 1.0f, 0.0f) * shift;
-        cout << "DEBUG::CAMERA::C-CAMERA-F-PM-2: " << position. x << " " << position.y << " " << position.z << endl;
+        // cout << "DEBUG::CAMERA::C-CAMERA-F-PM-2: " << position. x << " " << position.y << " " << position.z << endl;
     }
 
     void processTrackball(float thetaDifferent, float phiDifferent)

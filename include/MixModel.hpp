@@ -74,6 +74,7 @@ public:
         texture.activeAndBind(shader, 0);
         
         glBindVertexArray(VAO);
+        shader.setInt("pixelProcessId", 0);
         shader.setMat4("modelMat", modelMatrix);
         // glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0);
         glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (GLvoid*)0, models.size(), 0); 

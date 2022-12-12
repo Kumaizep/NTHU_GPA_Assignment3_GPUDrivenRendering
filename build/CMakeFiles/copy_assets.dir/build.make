@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev2
+CMAKE_SOURCE_DIR = /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev2/build
+CMAKE_BINARY_DIR = /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/build
 
 # Utility rule file for copy_assets.
 
@@ -67,7 +67,7 @@ include CMakeFiles/copy_assets.dir/compiler_depend.make
 include CMakeFiles/copy_assets.dir/progress.make
 
 CMakeFiles/copy_assets:
-	/usr/bin/cmake -E copy_directory /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev2/asset /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev2/build/asset
+	/usr/bin/cmake -E copy_directory /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/asset /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/build/asset
 
 copy_assets: CMakeFiles/copy_assets
 copy_assets: CMakeFiles/copy_assets.dir/build.make
@@ -82,6 +82,6 @@ CMakeFiles/copy_assets.dir/clean:
 .PHONY : CMakeFiles/copy_assets.dir/clean
 
 CMakeFiles/copy_assets.dir/depend:
-	cd /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev2/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev2 /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev2 /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev2/build /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev2/build /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev2/build/CMakeFiles/copy_assets.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/build /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/build /home/kumaizep/文件/NTHU/Homework/9/GP/Assignment3/GPUDrivenRendering-dev/build/CMakeFiles/copy_assets.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/copy_assets.dir/depend
 

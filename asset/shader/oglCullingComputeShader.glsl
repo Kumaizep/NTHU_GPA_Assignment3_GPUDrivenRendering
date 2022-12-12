@@ -42,23 +42,37 @@ layout (std430, binding = 4) buffer RawInstanceIndices
 	InstanceProperties rawInstanceIndices[];
 };
 
+layout (std430, binding = 6) buffer SlimeEated
+{
+	int slimeEated[];
+};
+
 uniform int numMaxInstance;
 uniform mat4 viewProjMat;
+uniform vec4 slimePosition;
+uniform float slimeRadius;
 
 
 void main() {
 	const uint idx = gl_GlobalInvocationID.x;
 	// discarding invalid array-access
-	if(idx >= numMaxInstance)
+	if(idx >= numMaxInstance || slimeEated[idx] == 1)
 	{
 		return; 
 	}
+
+	if (distance(slimePosition.xz, rawInstanceProps[idx].position.xz) < slimeRadius * 1.1)
+	{
+		slimeEated[idx] = 1;
+	}
+
 	// translate the position to clip space
 	vec4 clipSpaceV = viewProjMat * vec4(rawInstanceProps[idx].position.xyz, 1.0);
 	clipSpaceV = clipSpaceV / clipSpaceV.w ;
 	// determine if it is culled
 	bool frustumCulled = (clipSpaceV.x < -1.0) || (clipSpaceV.x > 1.0) || (clipSpaceV.y < -1.0) || (clipSpaceV.y > 1.0) || (clipSpaceV.z < -1.0) || (clipSpaceV.z > 1.0);
-	if(frustumCulled == false){
+	if(frustumCulled == false)
+	{
 		// get UNIQUE buffer location for assigning the instance data
 		// it also updates instanceCount
 		const uint C_IDX = uint(rawInstanceIndices[idx].position.x);

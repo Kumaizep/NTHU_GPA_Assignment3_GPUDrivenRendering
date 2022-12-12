@@ -52,12 +52,11 @@ public:
         // {
         //     textures[i].activeAndBind(shader, i);
         // }
-        texture.activeAndBind(shader, 0);
         
         glBindVertexArray(VAO);
         shader.setMat4("modelMat", modelMatrix);
         // glUniformMatrix4fv(SceneManager::Instance()->m_modelMatHandle, 1, false, glm::value_ptr(this->m_modelMat));
-        glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
         // glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 

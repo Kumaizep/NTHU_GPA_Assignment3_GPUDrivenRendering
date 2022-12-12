@@ -24,6 +24,8 @@ uniform mat4 projMat;
 uniform mat4 viewMat;
 uniform mat4 modelMat;
 uniform int pixelProcessId;
+uniform vec4 slimePosOffset;
+
 
 void commonProcess()
 {
@@ -57,12 +59,30 @@ void sampleProcess()
 	gl_Position = projMat * viewVertex;
 }
 
+void slimeProcess()
+{
+	vec4 worldVertex = modelMat * vec4(v_vertex, 1.0) + slimePosOffset;
+	vec4 worldNormal = modelMat * vec4(v_normal, 0.0);
+	f_worldVertex = worldVertex.xyz;
+	f_worldNormal = worldNormal.xyz;
+	vec4 viewVertex = viewMat * worldVertex;
+	vec4 viewNormal = viewMat * worldNormal;
+	f_viewVertex = viewVertex.xyz;
+	f_viewNormal = viewNormal.xyz;
+	f_uv = v_uv;
+	
+	gl_Position = projMat * viewVertex;
+}
+
 void main()
 {	
-	if(pixelProcessId == 4 || pixelProcessId == 5){
+	if (pixelProcessId == 4 || pixelProcessId == 5){
 		commonProcess();	
 	}
-	else{
+	else if (pixelProcessId == 0){
 		sampleProcess();
+	}
+	else {
+		slimeProcess();
 	}
 }

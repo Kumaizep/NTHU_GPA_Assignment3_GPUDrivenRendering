@@ -56,7 +56,7 @@ void pureColor(){
 
 void grass(){
 	const float n = 1.0f;
-	const vec3 Is = vec3(0.0);
+	const vec3 Is = vec3(0.0, 0.0, 0.0);
 
 	vec4 texel = texture(tex, f_uv);
 	if(texel.a < 0.3)
@@ -76,8 +76,31 @@ void grass(){
 	vec3 specular = Ks * Is * pow(max(dot(reflectDir, viewDir), 0.0), n); 
 
 	fragColor = vec4(ambient + diffuse + specular, 1.0f) * texel;
+}
+
+void slime(){
+	const vec3 Ia = vec3(0.0, 0.5, 0.7);
+	const vec3 Id = vec3(0.0, 0.5, 0.7);
+	const vec3 Is = vec3(1.0, 1.0, 1.0);
+	const float n = 1.0f;
+
+	vec4 texel = vec4(0.0, 0.5, 0.7, 1.0);
+	// ambient
+	vec3 ambient = Ka * Ia;
+	// diffuse
+	vec3 norm = normalize(f_worldNormal);
+	vec3 lightDir = normalize(lightDirection);
+	vec3 diffuse = Kd * Id * max(dot(lightDir, norm), 0.0);
+	// specular
+	vec3 viewDir = normalize(f_viewNormal);
+	vec3 reflectDir = reflect(-lightDir, norm);  
+	vec3 specular = Ks * Is * pow(max(dot(reflectDir, viewDir), 0.0), n); 
+
+	fragColor = vec4(ambient + diffuse + specular, 1.0f) * texel;
 	// fragColor = texel;
 }
+
+
 
 void main(){	
 	if(pixelProcessId == 4){
@@ -86,7 +109,10 @@ void main(){
 	else if(pixelProcessId == 5){
 		pureColor();
 	}
-	else{
+	else if(pixelProcessId == 0){
 		grass();
+	}
+	else {
+		slime();
 	}
 }

@@ -1,5 +1,6 @@
 #include "../include/Shader.hpp"
 #include "../include/SceneRenderer.hpp"
+#include "../include/MyMovingTrack.hpp"
 #include "../include/MyImGuiPanel.hpp"
 #include "../include/MyPoissonSample.hpp"
 #include "../include/ViewFrustumSceneObject.hpp"
@@ -35,9 +36,6 @@ GLuint resetCSProgramHandle;
 GLuint cullingCSProgramHandle;
 GLuint renderProgramHandle;
 
-ShaderProgram* rcsShaderProgram;
-ShaderProgram* ccsShaderProgram;
-
 int NUM_TOTAL_INSTANCE = 10;
 
 
@@ -60,6 +58,7 @@ double cursorPos[2];
 
 GLubyte timerCounter = 0;
 bool timerEnabled = true;
+bool pauseEnabled = false;
 float timerCurrent = 0.0f;
 float timerLast = 0.0f;
 unsigned int timerSpeed = 16;
@@ -79,7 +78,11 @@ void vsyncDisabled(GLFWwindow *window, Camera& pCamera, Camera& gCamera);
 
 // ==============================================
 SceneRenderer *defaultRenderer = nullptr;
+ShaderProgram* rcsShaderProgram = new ShaderProgram();
+ShaderProgram* ccsShaderProgram = new ShaderProgram();
 ShaderProgram* defaultShaderProgram = new ShaderProgram();
+
+IMovingTrack* movingTrack = nullptr ;
 
 MixModel mixModel;
 vector<Model> models;
@@ -144,7 +147,7 @@ int main(){
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow *window = glfwCreateWindow(FRAME_WIDTH, FRAME_HEIGHT, "rendering", nullptr, nullptr);
+	GLFWwindow *window = glfwCreateWindow(FRAME_WIDTH, FRAME_HEIGHT, "GPA2022_Assignment3", nullptr, nullptr);
 	if (window == nullptr){
 		cout << "failed to create GLFW window\n";
 		glfwTerminate();
@@ -351,7 +354,12 @@ bool initializeGL(){
 	m_imguiPanel = new MyImGuiPanel();	
 
 	// =================================================================
+	// initialize the IMovingTrack
+	movingTrack = new IMovingTrack();
+
+	// =================================================================
 	// initialize models
+	models.push_back(Model("asset/slime.obj", 0));
 	mixModel.addModel("asset/grassB.obj");
 	mixModel.addModel("asset/bush01_lod2.obj");
 	mixModel.addModel("asset/bush05_lod2.obj");
@@ -401,6 +409,7 @@ bool initializeGL(){
 	InstanceProperties* rawInsData = new InstanceProperties[NUM_TOTAL_INSTANCE];
 	InstanceProperties* rawInsIndices = new InstanceProperties[NUM_TOTAL_INSTANCE];
 	int* offset = new int [NUM_TOTAL_INSTANCE];
+	int* slimeEated = new int [NUM_TOTAL_INSTANCE];
 	cout << "DEMBUG::MAIN::IG::1" << endl;
 	int offsetla = 0;
 	for (int i = 0; i < mixModel.getModelNumber(); ++i)
@@ -409,9 +418,14 @@ bool initializeGL(){
 		cout << "DEMBUG::MAIN::IG::Genrate rawInsData ==================" << endl;
 		for (int j = 0; j < NUM_SAMPLE[i]; ++j)
 		{
-			rawInsData[offsetla].position = vec4(POSITION_BUFFER[offsetla * 3], POSITION_BUFFER[offsetla * 3 + 1], POSITION_BUFFER[offsetla * 3 + 2], 0.0f);
+			rawInsData[offsetla].position = vec4(
+				POSITION_BUFFER[offsetla * 3], 
+				POSITION_BUFFER[offsetla * 3 + 1], 
+				POSITION_BUFFER[offsetla * 3 + 2], 
+				0.0f);
 			rawInsIndices[offsetla].position = vec4(i, j, offset[i], 0);
-			cout << offsetla << ":\t(" << POSITION_BUFFER[offsetla * 3] << ", " << POSITION_BUFFER[offsetla * 3 + 1] << ", " << POSITION_BUFFER[offsetla * 3] << ")" << endl;
+			// cout << offsetla << ":\t(" << POSITION_BUFFER[offsetla * 3] << ", " << POSITION_BUFFER[offsetla * 3 + 1] << ", " << POSITION_BUFFER[offsetla * 3] << ")" << endl;
+			slimeEated[offsetla] = 0;
 			offsetla++;
 		}
 	}
@@ -469,6 +483,14 @@ bool initializeGL(){
 		offset, GL_MAP_READ_BIT);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, InstanceOffsetBufferHandle);
 
+	// prepare a SSBO for storing instance offset
+	GLuint SlimeEatedBufferHandle;
+	glGenBuffers(1, &SlimeEatedBufferHandle);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SlimeEatedBufferHandle);
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, NUM_TOTAL_INSTANCE * sizeof(int), 
+		slimeEated, GL_MAP_READ_BIT);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, SlimeEatedBufferHandle);
+
 
 	mixModel.bindVAO();
 	// SSBO as vertex shader attribute
@@ -489,11 +511,33 @@ void resizeGL(GLFWwindow *window, int w, int h){
 	resize(w, h);
 }
 
+bool slimeCulling(mat4 viewProjMat, vec3 position)
+{
+	vec4 clipSpaceV = viewProjMat * vec4(position, 1.0);
+	clipSpaceV = clipSpaceV / clipSpaceV.w ;
+
+	return (clipSpaceV.x < -1.0) || (clipSpaceV.x > 1.0) || (clipSpaceV.y < -1.0) || (clipSpaceV.y > 1.0) || (clipSpaceV.z < -1.0) || (clipSpaceV.z > 1.0);
+}
+
+void drawSlime(vec3 position)
+{
+	defaultRenderer->m_shaderProgram->setVec4("slimePosOffset", vec4(position, 0.0f));
+	defaultRenderer->m_shaderProgram->setInt("pixelProcessId", 1);
+	models[0].draw(*(defaultRenderer->m_shaderProgram), texture);
+}
+
 void paintGL(Camera& pCamera, Camera& gCamera){
+	if (pauseEnabled)
+		return;
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
+	// update Slime’s position
+	movingTrack->update() ;
+	// get the position of current frame
+	glm::vec3 position = movingTrack->position();
+	glm::vec4 positionVec4 = movingTrack->positionVec4();
 
 	// shader program for resetting render parameters
 	rcsShaderProgram->useProgram();
@@ -507,6 +551,8 @@ void paintGL(Camera& pCamera, Camera& gCamera){
 	// send the necessary information to compute shader (must after useProgram)
 	ccsShaderProgram->setInt("numMaxInstance", NUM_TOTAL_INSTANCE);
 	ccsShaderProgram->setMat4("viewProjMat", playerProjMat * pCamera.getView());
+	ccsShaderProgram->setVec4("slimePosition", positionVec4);
+	ccsShaderProgram->setFloat("slimeRadius", 1.5);
 	// start GPU process
 	glDispatchCompute((NUM_TOTAL_INSTANCE / 1024) + 1, 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -526,8 +572,6 @@ void paintGL(Camera& pCamera, Camera& gCamera){
 	// update player camera view frustum
 	viewFrustumSO->updateState(pCamera.getView(), PLAYER_VIEW_POSITION);
 
-	// models[0].updateState(pCamera.getView(), PLAYER_VIEW_POSITION);
-
 	// =============================================
 	// start new frame
 	defaultRenderer->setViewport(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
@@ -540,16 +584,18 @@ void paintGL(Camera& pCamera, Camera& gCamera){
 	defaultRenderer->setProjection(godProjMat);
 	defaultRenderer->setView(gCamera.getView());
 	defaultRenderer->renderPass();
-	defaultRenderer->m_shaderProgram->setInt("pixelProcessId", 0);
 	mixModel.draw(*(defaultRenderer->m_shaderProgram), texture);
+	if (!slimeCulling(playerProjMat * pCamera.getView(), position))
+		drawSlime(position);
 
 	// rendering with player view
 	defaultRenderer->setViewport(HALF_W, 0, HALF_W, FRAME_HEIGHT);
 	defaultRenderer->setProjection(playerProjMat);
 	defaultRenderer->setView(pCamera.getView());
 	defaultRenderer->renderPass();
-	defaultRenderer->m_shaderProgram->setInt("pixelProcessId", 0);
 	mixModel.draw(*(defaultRenderer->m_shaderProgram), texture);
+	if (!slimeCulling(playerProjMat * pCamera.getView(), position))
+		drawSlime(position);
 	// ===============================
 
 	ImGui::Begin("My name is window");
@@ -586,6 +632,9 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
             break;
         case GLFW_KEY_T:
             if (action == GLFW_PRESS) timerEnabled = !timerEnabled;
+            break;
+        case GLFW_KEY_SPACE:
+            if (action == GLFW_PRESS) pauseEnabled = !pauseEnabled;
             break;
         case GLFW_KEY_D:
         case GLFW_KEY_A:

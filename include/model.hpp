@@ -45,10 +45,24 @@ public:
         for (GLuint i = 0; i < meshes.size(); i++)
             meshes[i].draw(shader, texture, modelMatrix);
     }
+    void draw(ShaderProgram& shader)
+    {
+        glBindVertexArray(VAO);
+        shader.setMat4("modelMat", modelMatrix);
+        // shader.setInt("pixelProcessId", 1);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+        glActiveTexture(GL_TEXTURE0);
+    }
 
     void bind0()
     {
         meshes[0].bind();
+    }
+
+    void bind()
+    {
+        glBindVertexArray(VAO);
     }
 
     int getVertexNumber()
@@ -61,10 +75,6 @@ public:
         return count;
     }
 
-    // void updateState(const glm::mat4 &viewMat, const glm::vec3 &viewPos) {
-    // }
-private:
-    string directory;
     void setUpVAO()
     {
         // cout << "222 ";
@@ -93,6 +103,8 @@ private:
 
         glBindVertexArray(0);
     }
+private:
+    string directory;
 
     void mergeMeshes()
     {

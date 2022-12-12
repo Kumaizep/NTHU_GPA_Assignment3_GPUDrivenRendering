@@ -174,6 +174,11 @@ void ShaderProgram::setVec2(const GLchar* name, float x, float y)
     glUniform2f(glGetUniformLocation(this->m_programId, name), x, y); 
 }
 
+void ShaderProgram::setVec4(const GLchar* name, vec4 value)
+{ 
+    glUniform4f(glGetUniformLocation(this->m_programId, name), value.x, value.y, value.z, value.w); 
+}
+
 void ShaderProgram::setMat4(const GLchar* name, const mat4 &mat)
 {
     glUniformMatrix4fv(glGetUniformLocation(this->m_programId, name), 1, GL_FALSE, &mat[0][0]);

@@ -72,6 +72,7 @@ public:
 	void setBool(const GLchar* name, bool value);
 	void setFloat(const GLchar* name, float value);
 	void setVec2(const GLchar* name, float x, float y);
+	void setVec4(const GLchar* name, vec4 value);
 	void setMat4(const GLchar* name, const mat4 &mat);
 
 
