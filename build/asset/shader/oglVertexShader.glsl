@@ -1,4 +1,4 @@
-#version 430 core
+#version 460 core
 
 layout(location=0) in vec3 v_vertex;
 layout(location=1) in vec3 v_normal;
@@ -15,7 +15,7 @@ struct InstanceProperties
 {
 	vec4 position ;
 };
-layout (std430, binding=2) buffer CurrValidInstanceData
+layout (std430, binding = 2) buffer CurrValidInstanceData
 {
 	InstanceProperties currValidInstanceProps[] ;
 };
@@ -42,8 +42,9 @@ void commonProcess()
 
 void sampleProcess()
 {
+	// vec4 worldVertex = modelMat * vec4(v_vertex, 1.0);
 	vec4 worldVertex = modelMat * vec4(v_vertex, 1.0) + v_worldPosOffset;
-	// vec4 worldVertex = modelMat * vec4(v_vertex, 1.0) + v_worldPosOffset - vec4(20, 0, -240, 0);
+	// vec4 worldVertex = modelMat * vec4(v_vertex, 1.0) + v_worldPosOffset - vec4(gl_InstanceID, 0, gl_InstanceID, 0);
 	vec4 worldNormal = modelMat * vec4(v_normal, 0.0);
 	f_worldVertex = worldVertex.xyz;
 	f_worldNormal = worldNormal.xyz;

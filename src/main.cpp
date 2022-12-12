@@ -6,6 +6,7 @@
 #include "../include/InfinityPlane.hpp"
 #include "../include/camera.hpp"
 #include "../include/model.hpp"
+#include "../include/MixModel.hpp"
 #include "../include/texture.hpp"
 #include <GLFW/glfw3.h>
 
@@ -18,6 +19,11 @@ struct DrawElementsIndirectCommand{
 	unsigned int firstIndex;
 	unsigned int baseVertex;
 	unsigned int baseInstance;
+};
+
+struct RawInstanceProperties {
+	glm::vec4 position;
+	ivec4 indices;
 };
 
 struct InstanceProperties {
@@ -75,6 +81,7 @@ void vsyncDisabled(GLFWwindow *window, Camera& pCamera, Camera& gCamera);
 SceneRenderer *defaultRenderer = nullptr;
 ShaderProgram* defaultShaderProgram = new ShaderProgram();
 
+MixModel mixModel;
 vector<Model> models;
 Texture texture;
 
@@ -184,7 +191,7 @@ int main(){
 	(void)io;
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init("#version 430");
+	ImGui_ImplOpenGL3_Init("#version 460");
 
 	// disable vsync
 	glfwSwapInterval(0);
@@ -250,7 +257,7 @@ bool initializeShaderDefault()
 	shaderProgram->attachShader(fsShader);
 	shaderProgram->checkStatus();
 	if (shaderProgram->status() != ShaderProgramStatus::READY) {
-		cout << "DEBUG::MAIN::ShaderProgramStatusNotReady" << endl;
+		cout << "DEBUG::MAIN::ShaderProgramDefaultStatusNotReady" << endl;
 		return false;
 	}
 	shaderProgram->linkProgram();
@@ -291,7 +298,7 @@ bool initializeResetShader()
 	rcsShaderProgram->attachShader(rcsShader);
 	rcsShaderProgram->checkStatus();
 	if (rcsShaderProgram->status() != ShaderProgramStatus::READY) {
-		cout << "DEBUG::MAIN::ShaderProgramStatusNotReady" << endl;
+		cout << "DEBUG::MAIN::ShaderProgramResetStatusNotReady" << endl;
 		return false;
 	}
 	rcsShaderProgram->linkProgram();
@@ -313,7 +320,7 @@ bool initializeCullingShader()
 	ccsShaderProgram->attachShader(ccsShader);
 	ccsShaderProgram->checkStatus();
 	if (rcsShaderProgram->status() != ShaderProgramStatus::READY) {
-		cout << "DEBUG::MAIN::ShaderProgramStatusNotReady" << endl;
+		cout << "DEBUG::MAIN::ShaderProgramCullingSStatusNotReady" << endl;
 		return false;
 	}
 	ccsShaderProgram->linkProgram();
@@ -345,9 +352,10 @@ bool initializeGL(){
 
 	// =================================================================
 	// initialize models
-	models.push_back(Model("asset/grassB.obj", 0));
-	models.push_back(Model("asset/bush01_lod2.obj", 1));
-	models.push_back(Model("asset/bush05_lod2.obj", 2));
+	mixModel.addModel("asset/grassB.obj");
+	mixModel.addModel("asset/bush01_lod2.obj");
+	mixModel.addModel("asset/bush05_lod2.obj");
+	mixModel.setUpVAO();
 
 	// =================================================================
 	// initialize textures
@@ -360,19 +368,52 @@ bool initializeGL(){
 	MyPoissonSample* sample1 = MyPoissonSample::fromFile("asset/poissonPoints_1010.ppd");
 	MyPoissonSample* sample2 = MyPoissonSample::fromFile("asset/poissonPoints_2797.ppd");
 	// get number of sample
-	const int NUM_SAMPLE = sample2->m_numSample;
-	const float* POSITION_BUFFER = sample2->m_positions;
-	NUM_TOTAL_INSTANCE = NUM_SAMPLE;
-	const int offsetla = 0;
+	const int NUM_SAMPLE[3] = {sample0->m_numSample, sample1->m_numSample, sample2->m_numSample};
+	NUM_TOTAL_INSTANCE = NUM_SAMPLE[0] + NUM_SAMPLE[1] + NUM_SAMPLE[2];
+	vector<float> POSITION_BUFFER;
+	for (int i = 0; i < NUM_SAMPLE[0]; ++i)
+	{
+		POSITION_BUFFER.push_back(sample0->m_positions[3 * i]);
+		POSITION_BUFFER.push_back(sample0->m_positions[3 * i + 1]);
+		POSITION_BUFFER.push_back(sample0->m_positions[3 * i + 2]);
+	}
+	for (int i = 0; i < NUM_SAMPLE[1]; ++i)
+	{
+		POSITION_BUFFER.push_back(sample1->m_positions[3 * i]);
+		POSITION_BUFFER.push_back(sample1->m_positions[3 * i + 1]);
+		POSITION_BUFFER.push_back(sample1->m_positions[3 * i + 2]);
+	}
+	for (int i = 0; i < NUM_SAMPLE[2]; ++i)
+	{
+		POSITION_BUFFER.push_back(sample2->m_positions[3 * i]);
+		POSITION_BUFFER.push_back(sample2->m_positions[3 * i + 1]);
+		POSITION_BUFFER.push_back(sample2->m_positions[3 * i + 2]);
+	}
+
+	// for (int i = 0; i < NUM_TOTAL_INSTANCE; ++i)
+	// {
+	// 	cout << "DEMBUG::MAIN::IG::" << i << ":\t(" << POSITION_BUFFER[i * 3] << ", " << POSITION_BUFFER[i * 3 + 1] << ", " << POSITION_BUFFER[i * 3] << ")" << endl;
+	// }
+	// const float* POSITION_BUFFER[3] = {sample0->m_positions, sample1->m_positions, sample2->m_positions};
+	// NUM_TOTAL_INSTANCE = NUM_SAMPLE[0];
 	// =================================================================
 	// initialize rawInsData
 	InstanceProperties* rawInsData = new InstanceProperties[NUM_TOTAL_INSTANCE];
-	for(int i = 0; i < NUM_TOTAL_INSTANCE; i++)
+	InstanceProperties* rawInsIndices = new InstanceProperties[NUM_TOTAL_INSTANCE];
+	int* offset = new int [NUM_TOTAL_INSTANCE];
+	cout << "DEMBUG::MAIN::IG::1" << endl;
+	int offsetla = 0;
+	for (int i = 0; i < mixModel.getModelNumber(); ++i)
 	{
-		int offseted = i + offsetla;
-		rawInsData[i].position = vec4(POSITION_BUFFER[offseted * 3], POSITION_BUFFER[offseted * 3 + 1], POSITION_BUFFER[offseted * 3 + 2], 0.0f);
-		// rawInsData[i].position = vec4(0, 0, i, 0.0);
-		// cout << i << ":\t(" << POSITION_BUFFER[offseted * 3] << ", " << POSITION_BUFFER[offseted * 3 + 1] << ", " << POSITION_BUFFER[offseted * 3] << ")" << endl;
+		offset[i] = offsetla;
+		cout << "DEMBUG::MAIN::IG::Genrate rawInsData ==================" << endl;
+		for (int j = 0; j < NUM_SAMPLE[i]; ++j)
+		{
+			rawInsData[offsetla].position = vec4(POSITION_BUFFER[offsetla * 3], POSITION_BUFFER[offsetla * 3 + 1], POSITION_BUFFER[offsetla * 3 + 2], 0.0f);
+			rawInsIndices[offsetla].position = vec4(i, j, offset[i], 0);
+			cout << offsetla << ":\t(" << POSITION_BUFFER[offsetla * 3] << ", " << POSITION_BUFFER[offsetla * 3 + 1] << ", " << POSITION_BUFFER[offsetla * 3] << ")" << endl;
+			offsetla++;
+		}
 	}
 
 	// prepare a SSBO for storing raw instance data
@@ -389,25 +430,47 @@ bool initializeGL(){
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, validInstanceDataBufferHandle);
 	// #TAG1
 	glBufferStorage(GL_SHADER_STORAGE_BUFFER, NUM_TOTAL_INSTANCE * sizeof(InstanceProperties), 
-		nullptr, GL_MAP_READ_BIT);
+		rawInsData, GL_MAP_READ_BIT);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, validInstanceDataBufferHandle);
 
 	// prepare a SSBO for storing draw commands
-	DrawElementsIndirectCommand drawCommands[1];
-	drawCommands[0].count = models[0].getVertexNumber();
-	// #TAG1
-	drawCommands[0].instanceCount = NUM_TOTAL_INSTANCE;
-	drawCommands[0].firstIndex = 0;
-	drawCommands[0].baseVertex = 0;
-	drawCommands[0].baseInstance = 0;
+	DrawElementsIndirectCommand* drawCommands = new DrawElementsIndirectCommand[mixModel.getModelNumber()];
+	offsetla = 0;
+	for (int i = 0; i < mixModel.getModelNumber(); ++i)
+	{
+		drawCommands[i].count = mixModel.models[i].getVertexNumber();
+		drawCommands[i].instanceCount = NUM_SAMPLE[i];
+		drawCommands[i].firstIndex = 0;
+		drawCommands[i].baseVertex = offsetla;
+		drawCommands[i].baseInstance = offset[i];
+		offsetla += mixModel.models[i].getVertexNumber();
+	}
 	GLuint cmdBufferHandle;
 	glGenBuffers(1, &cmdBufferHandle);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, cmdBufferHandle);
-	glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(DrawElementsIndirectCommand),
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, mixModel.getModelNumber() * sizeof(DrawElementsIndirectCommand),
 	drawCommands, GL_MAP_READ_BIT);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, cmdBufferHandle);
 
-	models[2].bind0();
+
+	// prepare a SSBO for storing raw instance indice
+	GLuint rawInstanceIndicesBufferHandle;
+	glGenBuffers(1, &rawInstanceIndicesBufferHandle);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, rawInstanceIndicesBufferHandle);
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, NUM_TOTAL_INSTANCE * sizeof(InstanceProperties), 
+		rawInsIndices, GL_MAP_READ_BIT);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, rawInstanceIndicesBufferHandle);
+
+	// prepare a SSBO for storing instance offset
+	GLuint InstanceOffsetBufferHandle;
+	glGenBuffers(1, &InstanceOffsetBufferHandle);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, InstanceOffsetBufferHandle);
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, mixModel.getModelNumber() * sizeof(int), 
+		offset, GL_MAP_READ_BIT);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, InstanceOffsetBufferHandle);
+
+
+	mixModel.bindVAO();
 	// SSBO as vertex shader attribute
 	glBindBuffer(GL_ARRAY_BUFFER, validInstanceDataBufferHandle);
 	glVertexAttribPointer(3, 4, GL_FLOAT, false, 0, nullptr);
@@ -434,6 +497,8 @@ void paintGL(Camera& pCamera, Camera& gCamera){
 
 	// shader program for resetting render parameters
 	rcsShaderProgram->useProgram();
+	rcsShaderProgram->setInt("instanceTypeNumber", mixModel.getModelNumber());
+	rcsShaderProgram->setInt("workMode", 0);
 	glDispatchCompute(1, 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
@@ -446,11 +511,12 @@ void paintGL(Camera& pCamera, Camera& gCamera){
 	glDispatchCompute((NUM_TOTAL_INSTANCE / 1024) + 1, 1, 1);
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-	// shader program for rendering
-	// glUseProgram(renderProgramHandle);
-	// render
-	// glBindVertexArray(models[0].meshes[0].VAO) ;
-	// glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0);
+	// // shader program for resetting render parameters
+	// rcsShaderProgram->useProgram();
+	// rcsShaderProgram->setInt("instanceTypeNumber", mixModel.getModelNumber());
+	// rcsShaderProgram->setInt("workMode", 1);
+	// glDispatchCompute(1, 1, 1);
+	// glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 	// ===============================
 	// update infinity plane with player camera
@@ -475,7 +541,7 @@ void paintGL(Camera& pCamera, Camera& gCamera){
 	defaultRenderer->setView(gCamera.getView());
 	defaultRenderer->renderPass();
 	defaultRenderer->m_shaderProgram->setInt("pixelProcessId", 0);
-	models[2].draw(*(defaultRenderer->m_shaderProgram), texture);
+	mixModel.draw(*(defaultRenderer->m_shaderProgram), texture);
 
 	// rendering with player view
 	defaultRenderer->setViewport(HALF_W, 0, HALF_W, FRAME_HEIGHT);
@@ -483,7 +549,7 @@ void paintGL(Camera& pCamera, Camera& gCamera){
 	defaultRenderer->setView(pCamera.getView());
 	defaultRenderer->renderPass();
 	defaultRenderer->m_shaderProgram->setInt("pixelProcessId", 0);
-	models[2].draw(*(defaultRenderer->m_shaderProgram), texture);
+	mixModel.draw(*(defaultRenderer->m_shaderProgram), texture);
 	// ===============================
 
 	ImGui::Begin("My name is window");

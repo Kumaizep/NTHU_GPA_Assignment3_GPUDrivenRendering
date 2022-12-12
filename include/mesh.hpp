@@ -37,6 +37,8 @@ public:
         : vertices(vertices), indices(indices), textures(textures)
     {
         setMesh();
+        cout << "DEBUG::MESH::F-M: build Mesh " << vertices.size() << " " << indices.size() << " " << textures.size() << endl;
+
     }
 
     void draw(ShaderProgram& shader, Texture& texture, mat4 modelMatrix) 
@@ -93,22 +95,6 @@ private:
         glEnableVertexAttribArray(2); 
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
             (GLvoid*)offsetof(Vertex, texCoords));
-
-        // glEnableVertexAttribArray(3);
-        // glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
-        //     (GLvoid*)offsetof(Vertex, tangent));
-
-        // glEnableVertexAttribArray(4);
-        // glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
-        //     (GLvoid*)offsetof(Vertex, bitangent));
-
-        // glEnableVertexAttribArray(5);
-        // glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex),
-        //     (GLvoid*)offsetof(Vertex, mBoneIDs));
-
-        // glEnableVertexAttribArray(6);
-        // glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-        //     (GLvoid*)offsetof(Vertex, mWeights));
 
         glBindVertexArray(0);
     }

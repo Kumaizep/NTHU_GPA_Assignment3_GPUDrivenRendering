@@ -1,4 +1,4 @@
-#version 430 core
+#version 460 core
 
 in vec3 f_viewVertex;
 in vec3 f_viewNormal;

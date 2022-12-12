@@ -1,4 +1,4 @@
-#version 430 core
+#version 460 core
 
 layout (local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 
@@ -14,7 +14,7 @@ struct DrawCommand
 struct RawInstanceProperties
 {
 	vec4 position;
-	ivec4 indices;
+	vec4 indices;
 };
 
 struct InstanceProperties{
@@ -37,6 +37,10 @@ layout (std430, binding = 3) buffer DrawCommandsBlock
 	DrawCommand commands[];
 };
 
+layout (std430, binding = 4) buffer RawInstanceIndices
+{
+	InstanceProperties rawInstanceIndices[];
+};
 
 uniform int numMaxInstance;
 uniform mat4 viewProjMat;
@@ -57,7 +61,8 @@ void main() {
 	if(frustumCulled == false){
 		// get UNIQUE buffer location for assigning the instance data
 		// it also updates instanceCount
-		const uint UNIQUE_IDX = atomicAdd(commands[0].instanceCount, 1);
+		const uint C_IDX = uint(rawInstanceIndices[idx].position.x);
+		const uint UNIQUE_IDX = atomicAdd(commands[C_IDX].instanceCount, 1) + uint(rawInstanceIndices[idx].position.z);
 		// put data into valid-instance buffer
 		currValidInstanceProps[UNIQUE_IDX] = rawInstanceProps[idx];
 	}

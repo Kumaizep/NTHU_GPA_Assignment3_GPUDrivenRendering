@@ -26,15 +26,20 @@ class Model
 public:
     int uvZ;
     vector<Mesh> meshes;
+    GLuint VAO, VBO, EBO;
+    vector<Vertex>  vertices;
+    vector<GLuint>  indices;
+    vector<Texture> textures;
     mat4 modelMatrix = translate(mat4(1.0f), vec3(0.0f));
 
     Model(const string path, const int idx)
     {
         uvZ = idx;
         loadModel(path);
+        mergeMeshes();
     }
 
-    void draw(ShaderProgram& shader, Texture& texture, vec3 position = vec3(0.0f))
+    void draw(ShaderProgram& shader, Texture& texture)
     {
         // cout << "DEBUG::MODEL::C-MODEL-F-D: " << meshes.size() << endl;
         for (GLuint i = 0; i < meshes.size(); i++)
@@ -60,6 +65,48 @@ public:
     // }
 private:
     string directory;
+    void setUpVAO()
+    {
+        // cout << "222 ";
+        glGenVertexArrays(1, &VAO);
+        glBindVertexArray(VAO);
+
+        glGenBuffers(1, &VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);  
+
+        glGenBuffers(1, &EBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), &indices[0], GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0); 
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
+            (GLvoid*)0);
+
+        glEnableVertexAttribArray(1); 
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
+            (GLvoid*)offsetof(Vertex, normal));
+
+        glEnableVertexAttribArray(2); 
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 
+            (GLvoid*)offsetof(Vertex, texCoords));
+
+        glBindVertexArray(0);
+    }
+
+    void mergeMeshes()
+    {
+        for (auto& it: meshes)
+        {
+            GLuint offset = vertices.size();
+            for (auto& itIndex: it.indices) {
+                indices.push_back(itIndex + offset);
+            }
+            vertices.insert(vertices.end(), it.vertices.begin(), it.vertices.end());
+            textures.insert(textures.end(), it.textures.begin(), it.textures.end());
+        }
+        cout << "DEBUG::MODEL::F-MM: merge all model with " << vertices.size() << " " << indices.size() << " " << textures.size() << endl;
+    }
 
     void loadModel(const string path)
     {
