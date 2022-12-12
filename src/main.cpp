@@ -400,7 +400,7 @@ bool initializeGL(){
 
 	// for (int i = 0; i < NUM_TOTAL_INSTANCE; ++i)
 	// {
-	// 	cout << "DEMBUG::MAIN::IG::" << i << ":\t(" << POSITION_BUFFER[i * 3] << ", " << POSITION_BUFFER[i * 3 + 1] << ", " << POSITION_BUFFER[i * 3] << ")" << endl;
+	// 	cout << "DEBUG::MAIN::IG::" << i << ":\t(" << POSITION_BUFFER[i * 3] << ", " << POSITION_BUFFER[i * 3 + 1] << ", " << POSITION_BUFFER[i * 3] << ")" << endl;
 	// }
 	// const float* POSITION_BUFFER[3] = {sample0->m_positions, sample1->m_positions, sample2->m_positions};
 	// NUM_TOTAL_INSTANCE = NUM_SAMPLE[0];
@@ -410,12 +410,12 @@ bool initializeGL(){
 	InstanceProperties* rawInsIndices = new InstanceProperties[NUM_TOTAL_INSTANCE];
 	int* offset = new int [NUM_TOTAL_INSTANCE];
 	int* slimeEated = new int [NUM_TOTAL_INSTANCE];
-	cout << "DEMBUG::MAIN::IG::1" << endl;
+	// cout << "DEBUG::MAIN::IG::1" << endl;
 	int offsetla = 0;
 	for (int i = 0; i < mixModel.getModelNumber(); ++i)
 	{
 		offset[i] = offsetla;
-		cout << "DEMBUG::MAIN::IG::Genrate rawInsData ==================" << endl;
+		// cout << "DEBUG::MAIN::IG::Genrate rawInsData ==================" << endl;
 		for (int j = 0; j < NUM_SAMPLE[i]; ++j)
 		{
 			rawInsData[offsetla].position = vec4(
