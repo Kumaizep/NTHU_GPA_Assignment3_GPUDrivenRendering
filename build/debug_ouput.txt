@@ -1,6 +1,0 @@
-ready
-0:104(57): error: `texel' undeclared
-0:104(14): error: operands to arithmetic operators must be numeric
-
-DEBUG::MAIN::ShaderProgramDefaultStatusNotReady
-initialize GL failed
