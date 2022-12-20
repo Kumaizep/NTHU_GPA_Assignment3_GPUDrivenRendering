@@ -598,7 +598,7 @@ void paintGL(Camera& pCamera, Camera& gCamera){
 		drawSlime(position);
 	// ===============================
 
-	ImGui::Begin("My name is window");
+	ImGui::Begin("Frame Status");
 	m_imguiPanel->update();
 	ImGui::End();
 

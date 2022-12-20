@@ -75,7 +75,7 @@ void grass(){
 	vec3 reflectDir = reflect(-lightDir, norm);  
 	vec3 specular = Ks * Is * pow(max(dot(reflectDir, viewDir), 0.0), n); 
 
-	fragColor = vec4(ambient + diffuse + specular, 1.0f) * texel;
+	fragColor = vec4(ambient + diffuse + specular, 1.0f);
 }
 
 void slime(){
@@ -96,7 +96,7 @@ void slime(){
 	vec3 reflectDir = reflect(-lightDir, norm);  
 	vec3 specular = Ks * Is * pow(max(dot(reflectDir, viewDir), 0.0), n); 
 
-	fragColor = vec4(ambient + diffuse + specular, 1.0f) * texel;
+	fragColor = vec4(ambient + diffuse + specular, 1.0f);
 	// fragColor = texel;
 }
 
